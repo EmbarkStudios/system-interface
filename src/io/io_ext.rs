@@ -308,10 +308,22 @@ impl IoExt for std::fs::File {
     fn peek(&self, buf: &mut [u8]) -> io::Result<usize> {
         use std::os::windows::io::AsRawHandle;
 
+        #[link(name = "kernel32", kind = "raw-dylib")]
+        extern "system" {
+            pub fn PeekNamedPipe(
+                hNamedPipe: isize,
+                lpBuffer: *mut std::ffi::c_void,
+                nBufferSize: u32,
+                lpBytesRead: *mut u32,
+                lpTotalBytesAvail: *mut u32,
+                lpBytesLeftThisMessage: *mut u32,
+            ) -> i32;
+        }
+
         let mut bytes_read = std::mem::MaybeUninit::<u32>::uninit();
         let len = std::cmp::min(buf.len(), u32::MAX as usize) as u32;
         let res = unsafe {
-            windows_sys::Win32::System::Pipes::PeekNamedPipe(
+            PeekNamedPipe(
                 self.as_filelike().as_raw_handle() as _,
                 buf.as_mut_ptr() as *mut std::ffi::c_void,
                 len,

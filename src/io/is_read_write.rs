@@ -1,16 +1,36 @@
 use std::io;
-#[cfg(not(windows))]
-use {io_lifetimes::AsFilelike, rustix::io::is_read_write};
 #[cfg(windows)]
 use {
+    bindings::*,
     std::{
         os::windows::io::{AsRawSocket, RawSocket},
         ptr,
     },
-    windows_sys::Win32::Networking::WinSock::{
-        recv, send, MSG_PEEK, SOCKET, SOCKET_ERROR, WSAEFAULT, WSAESHUTDOWN, WSAEWOULDBLOCK,
-    },
 };
+#[cfg(not(windows))]
+use {io_lifetimes::AsFilelike, rustix::io::is_read_write};
+
+#[cfg(windows)]
+mod bindings {
+    #![allow(non_camel_case_types)]
+
+    pub type SEND_RECV_FLAGS = i32;
+    pub const MSG_PEEK: SEND_RECV_FLAGS = 2;
+
+    pub const SOCKET_ERROR: i32 = -1;
+
+    pub type WSA_ERROR = i32;
+    pub const WSAEFAULT: WSA_ERROR = 10014;
+    pub const WSAEWOULDBLOCK: WSA_ERROR = 10035;
+    pub const WSAESHUTDOWN: WSA_ERROR = 10058;
+    pub type SOCKET = usize;
+
+    #[link(name = "ws2_32", kind = "raw-dylib")]
+    extern "system" {
+        pub fn recv(s: SOCKET, buf: *const u8, len: i32, flags: SEND_RECV_FLAGS) -> i32;
+        pub fn send(s: SOCKET, buf: *const u8, len: i32, flags: SEND_RECV_FLAGS) -> i32;
+    }
+}
 
 /// A trait for the `is_read_write` function.
 pub trait IsReadWrite {

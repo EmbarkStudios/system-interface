@@ -7,10 +7,19 @@ use std::io::{self, Seek, SeekFrom, Stdin, StdinLock};
 use std::net;
 use std::process::{ChildStderr, ChildStdout};
 #[cfg(windows)]
-use {
-    std::{mem::MaybeUninit, os::windows::io::AsRawSocket},
-    windows_sys::Win32::Networking::WinSock::{ioctlsocket, FIONREAD, SOCKET},
-};
+use std::{mem::MaybeUninit, os::windows::io::AsRawSocket};
+
+#[cfg(windows)]
+mod bindings {
+    pub type SOCKET = usize;
+    pub const FIONREAD: i32 = 1074030207;
+    #[link(name = "ws2_32", kind = "raw-dylib")]
+    extern "system" {
+        pub fn ioctlsocket(s: SOCKET, cmd: i32, argp: *mut u32) -> i32;
+    }
+}
+#[cfg(windows)]
+use bindings::*;
 
 /// Extension for readable streams that can indicate the number of bytes
 /// ready to be read immediately.

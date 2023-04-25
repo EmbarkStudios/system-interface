@@ -10,9 +10,10 @@ use {
     cap_fs_ext::{OpenOptions, Reopen},
     io_lifetimes::AsHandle,
     std::os::windows::fs::OpenOptionsExt,
-    windows_sys::Win32::Storage::FileSystem::FILE_FLAG_WRITE_THROUGH,
     winx::file::{AccessMode, FileModeInformation},
 };
+#[cfg(windows)]
+const FILE_FLAG_WRITE_THROUGH: u32 = 2147483648;
 
 /// An opaque representation of the state needed to perform a `set_fd_flags`
 /// operation.
